@@ -15,6 +15,7 @@
 #include "mlx/einsum.h"
 #include "mlx/ops.h"
 #include "mlx/utils.h"
+#include "python/src/convert.h"
 #include "python/src/load.h"
 #include "python/src/small_vector.h"
 #include "python/src/utils.h"
@@ -43,6 +44,22 @@ double scalar_to_double(Scalar s) {
   } else {
     return static_cast<double>(std::get<bool>(s));
   }
+}
+
+// Convert a Python-side shape (scalar int or sequence of ints) to mx::Shape,
+// raising a clean error when a dimension overflows int32.
+mx::Shape to_shape(
+    const std::variant<int64_t, std::vector<int64_t>>& shape) {
+  if (auto pv = std::get_if<int64_t>(&shape); pv) {
+    return mx::Shape{check_shape_dim(*pv)};
+  }
+  const auto& v = std::get<std::vector<int64_t>>(shape);
+  mx::Shape out;
+  out.reserve(v.size());
+  for (auto d : v) {
+    out.push_back(check_shape_dim(d));
+  }
+  return out;
 }
 
 void init_ops(nb::module_& m) {
@@ -1702,15 +1719,11 @@ void init_ops(nb::module_& m) {
       )pbdoc");
   m.def(
       "full",
-      [](const std::variant<int, mx::Shape>& shape,
+      [](const std::variant<int64_t, std::vector<int64_t>>& shape,
          const ScalarOrArray& vals,
          std::optional<mx::Dtype> dtype,
          mx::StreamOrDevice s) {
-        if (auto pv = std::get_if<int>(&shape); pv) {
-          return mx::full({*pv}, to_array(vals, dtype), s);
-        } else {
-          return mx::full(std::get<mx::Shape>(shape), to_array(vals, dtype), s);
-        }
+        return mx::full(to_shape(shape), to_array(vals, dtype), s);
       },
       "shape"_a,
       "vals"_a,
@@ -1736,15 +1749,11 @@ void init_ops(nb::module_& m) {
       )pbdoc");
   m.def(
       "zeros",
-      [](const std::variant<int, mx::Shape>& shape,
+      [](const std::variant<int64_t, std::vector<int64_t>>& shape,
          std::optional<mx::Dtype> dtype,
          mx::StreamOrDevice s) {
         auto t = dtype.value_or(mx::float32);
-        if (auto pv = std::get_if<int>(&shape); pv) {
-          return mx::zeros({*pv}, t, s);
-        } else {
-          return mx::zeros(std::get<mx::Shape>(shape), t, s);
-        }
+        return mx::zeros(to_shape(shape), t, s);
       },
       "shape"_a,
       "dtype"_a.none() = mx::float32,
@@ -1802,15 +1811,11 @@ void init_ops(nb::module_& m) {
       )pbdoc");
   m.def(
       "ones",
-      [](const std::variant<int, mx::Shape>& shape,
+      [](const std::variant<int64_t, std::vector<int64_t>>& shape,
          std::optional<mx::Dtype> dtype,
          mx::StreamOrDevice s) {
         auto t = dtype.value_or(mx::float32);
-        if (auto pv = std::get_if<int>(&shape); pv) {
-          return mx::ones({*pv}, t, s);
-        } else {
-          return mx::ones(std::get<mx::Shape>(shape), t, s);
-        }
+        return mx::ones(to_shape(shape), t, s);
       },
       "shape"_a,
       "dtype"_a.none() = mx::float32,

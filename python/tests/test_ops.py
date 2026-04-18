@@ -92,6 +92,32 @@ class TestOps(mlx_tests.MLXTestCase):
             self.assertEqual(y.dtype, t)
             self.assertTrue(mx.array_equal(y, x))
 
+    def test_shape_overflow_error(self):
+        # Shape dimensions that don't fit in int32 should raise a clear
+        # ValueError that names the offending value, rather than a generic
+        # "incompatible function arguments" TypeError. See issue #2681.
+        too_big = 2**31
+        for ctor in (mx.zeros, mx.ones):
+            with self.assertRaises(ValueError) as cm:
+                ctor(too_big)
+            self.assertIn(str(too_big), str(cm.exception))
+            with self.assertRaises(ValueError) as cm:
+                ctor([too_big])
+            self.assertIn(str(too_big), str(cm.exception))
+
+        with self.assertRaises(ValueError) as cm:
+            mx.full(too_big, 0.0)
+        self.assertIn(str(too_big), str(cm.exception))
+        with self.assertRaises(ValueError) as cm:
+            mx.full([too_big], 0.0)
+        self.assertIn(str(too_big), str(cm.exception))
+
+        # Shapes that fit in int32 still go through unchanged.
+        self.assertEqual(mx.zeros(4).shape, (4,))
+        self.assertEqual(mx.zeros((2, 3)).shape, (2, 3))
+        self.assertEqual(mx.ones([2, 3]).shape, (2, 3))
+        self.assertEqual(mx.full((2, 3), 1.5).tolist(), [[1.5] * 3] * 2)
+
     def test_scalar_inputs(self):
         # Check combinations of python types
         a = mx.add(False, True)
