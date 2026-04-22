@@ -94,7 +94,7 @@ class TestOps(mlx_tests.MLXTestCase):
 
     def test_shape_overflow_error(self):
         # Shape dimensions that don't fit in int32 should raise a clear
-        # ValueError that names the offending value, rather than a generic
+        # OverflowError that names the offending value, rather than a generic
         # "incompatible function arguments" TypeError. The overflow check
         # lives in the mx::Shape type caster, so it applies to every op that
         # takes a shape. See issue #2681.
@@ -102,33 +102,33 @@ class TestOps(mlx_tests.MLXTestCase):
 
         # Array creation ops — also exercise the scalar shape path.
         for ctor in (mx.zeros, mx.ones):
-            with self.assertRaises(ValueError) as cm:
+            with self.assertRaises(OverflowError) as cm:
                 ctor(too_big)
             self.assertIn(str(too_big), str(cm.exception))
-            with self.assertRaises(ValueError) as cm:
+            with self.assertRaises(OverflowError) as cm:
                 ctor([too_big])
             self.assertIn(str(too_big), str(cm.exception))
 
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(OverflowError) as cm:
             mx.full(too_big, 0.0)
         self.assertIn(str(too_big), str(cm.exception))
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(OverflowError) as cm:
             mx.full([too_big], 0.0)
         self.assertIn(str(too_big), str(cm.exception))
 
         # Other shape-taking ops should surface the same clean error.
         a = mx.zeros(4)
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(OverflowError) as cm:
             mx.reshape(a, [too_big])
         self.assertIn(str(too_big), str(cm.exception))
 
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(OverflowError) as cm:
             mx.broadcast_to(a, [too_big, 1])
         self.assertIn(str(too_big), str(cm.exception))
 
         # Negative overflow (< int32 min) is caught too.
         too_negative = -(2**31) - 1
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(OverflowError) as cm:
             mx.zeros([too_negative])
         self.assertIn(str(too_negative), str(cm.exception))
 

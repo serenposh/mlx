@@ -26,7 +26,8 @@ int check_shape_dim(int64_t dim) {
         << std::numeric_limits<int>::min() << ", "
         << std::numeric_limits<int>::max()
         << "]. MLX currently uses 32-bit integers for shape dimensions.";
-    throw std::invalid_argument(msg.str());
+    PyErr_SetString(PyExc_OverflowError, msg.str().c_str());
+    nb::detail::raise_python_error();
   }
   return static_cast<int>(dim);
 }
