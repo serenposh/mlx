@@ -21,8 +21,7 @@ int check_shape_dim(int64_t dim) {
   if (dim > std::numeric_limits<int>::max() ||
       dim < std::numeric_limits<int>::min()) {
     std::ostringstream msg;
-    msg << "Shape dimension " << dim
-        << " is outside the supported range ["
+    msg << "Shape dimension " << dim << " is outside the supported range ["
         << std::numeric_limits<int>::min() << ", "
         << std::numeric_limits<int>::max()
         << "]. MLX currently uses 32-bit integers for shape dimensions.";

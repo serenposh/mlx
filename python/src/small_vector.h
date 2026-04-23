@@ -58,12 +58,9 @@ struct type_caster<mlx::core::SmallVector<Type, Size, Alloc>> {
         if (v > std::numeric_limits<Type>::max() ||
             v < std::numeric_limits<Type>::min()) {
           std::ostringstream msg;
-          msg << "Integer value " << v
-              << " is outside the supported range ["
-              << static_cast<int64_t>(std::numeric_limits<Type>::min())
-              << ", "
-              << static_cast<int64_t>(std::numeric_limits<Type>::max())
-              << "].";
+          msg << "Integer value " << v << " is outside the supported range ["
+              << static_cast<int64_t>(std::numeric_limits<Type>::min()) << ", "
+              << static_cast<int64_t>(std::numeric_limits<Type>::max()) << "].";
           Py_XDECREF(temp);
           PyErr_SetString(PyExc_OverflowError, msg.str().c_str());
           raise_python_error();
